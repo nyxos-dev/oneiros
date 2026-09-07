@@ -69,6 +69,18 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   convergence budgets. Low-temp samples emit real C tokens (`const`, `uint8_t*`,
   `sizeof(`, `return`, `= ;`) but loop ("the the the") and lack structure → the
   char-8-context MLP captures *local statistics, not code structure*.
-- **NEXT (I3) — tokeniser.** The clear lever: reason in C tokens (identifiers,
-  keywords, punctuation), not raw bytes, so each step carries structure. Then a
-  fair capacity re-test at equal-convergence budget.
+- **I3 (DONE)** — from-scratch byte-level **BPE tokeniser** (`src/bpe.c`): learns
+  merges on the clean corpus, vocab 1024, **2.42 bytes/token**, verified **lossless
+  round-trip** (decode == corpus). Learned tokens are real C structure (`int`,
+  `if`, `//`, `->`, `;\n    `). Unified the model on a `sym_t` type so it trains on
+  bytes (V=256) or tokens (`-DV=1024`) from a `.tok` file; token-mode sampling
+  encodes the seed + decodes output via the vocab. Token model, 2M steps: val 4.26
+  nats/token = **2.54 bits/byte vs the char model's 2.84 — 10.6 % better** on the
+  comparable per-byte metric, and it crossed the char bpb by ~120k steps (~16×
+  less training). Decoded samples emit C idioms as units (`for (int i=...; ... <
+  SCREEN_WIDTH; ...)`, `out[ti] = 0;`). Train/val gap widened (3.67 / 4.26) → the
+  1024-token corpus is a smaller effective dataset; mild overfitting begins.
+- **NEXT (I4) — attention.** A minimal from-scratch self-attention block over the
+  token context (longer effective memory than the fixed B-window MLP), plus more
+  BPE merges / data to close the overfit gap. Then the deferred fair capacity
+  re-test at equal-convergence budget.

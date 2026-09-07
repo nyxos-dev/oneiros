@@ -2,5 +2,6 @@ build/
 logs/
 data/*.txt
 *.bin
+*.tok
 *.o
 oneiros
