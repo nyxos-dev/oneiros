@@ -1,6 +1,6 @@
 build/
 logs/
-data/corpus.txt
+data/*.txt
 *.bin
 *.o
 oneiros

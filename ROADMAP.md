@@ -52,6 +52,12 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
 
 ## Log
 
-- **I1** — model + training loop written and validated; 40K-step smoke run reached
-  loss 1.59 and already emits C indentation, `static void`, comments and the
-  driver `0x00,` byte-table idiom. Full-corpus run launched.
+- **I1** — model + training loop written and validated. 1M-step full-corpus run
+  converged to loss **0.776**; the model emits C indentation, `static void`,
+  comments, `if (`, `{ }`, `= 0;`, `++)`, `!=`, `&&`. **Key finding:** the raw
+  corpus is **84.5 % hex-table bytes** (font bitmaps / embedded assets / KAT
+  vectors), so the model over-learns `0xNN,` runs. Fix = train on code logic only.
+- **I2 (started)** — cleaned corpus `data/corpus_clean.txt` (strip lines matching
+  `0x[0-9A-Fa-f]{2},`): 36 MB → **5.69 MB / 152 787 lines** of real C. Retraining
+  on it to compare sample quality. Still to do this line: train/val split for a
+  real generalisation number, then minibatching + a faster output layer.
