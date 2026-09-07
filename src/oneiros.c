@@ -28,10 +28,18 @@
 #include <stdint.h>
 
 #define V    256          /* vocabulary: raw bytes                 */
-#define E    24           /* embedding dimension                   */
-#define B    8            /* context window (bytes of history)     */
+#ifndef E
+#define E    24           /* embedding dimension   (override -DE=)  */
+#endif
+#ifndef B
+#define B    8            /* context window bytes  (override -DB=)  */
+#endif
 #define IN   (B * E)      /* concatenated context vector           */
-#define HID  256          /* hidden units                          */
+#ifndef HID
+#define HID  256          /* hidden units          (override -DHID=)*/
+#endif
+#define BATCH 32           /* samples averaged per gradient step    */
+#define VAL_FRAC 0.10f     /* tail fraction of corpus held out      */
 
 /* ---- parameters (the learned weights) ---- */
 typedef struct {
@@ -180,6 +188,23 @@ static int load(const char *path, Params *p) {
     return ok;
 }
 
+/* average cross-entropy over `count` random windows in [lo, hi); does not
+ * disturb the training RNG stream (save/restore) so runs stay reproducible */
+static double eval_loss(const Params *p, const char *text, size_t lo, size_t hi, int count) {
+    if (hi < lo + B + 1) return 0.0;
+    float x[IN], h[HID], probs[V];
+    size_t span = hi - lo - B - 1; if (span == 0) span = 1;
+    uint64_t saved = rng_state;
+    double sum = 0.0;
+    for (int i = 0; i < count; i++) {
+        size_t pos = lo + (size_t)(((uint64_t)rnd() << 20 ^ rnd()) % span);
+        const unsigned char *ctx = (const unsigned char *)text + pos;
+        sum += forward(p, ctx, (unsigned char)text[pos + B], x, h, probs);
+    }
+    rng_state = saved;
+    return sum / count;
+}
+
 static void cmd_train(int argc, char **argv) {
     const char *corpus = argv[2];
     long steps         = atol(argv[3]);
@@ -196,31 +221,48 @@ static void cmd_train(int argc, char **argv) {
     if (in && load(in, p)) fprintf(stderr, "resumed from %s\n", in);
     else                   { init_params(p); fprintf(stderr, "fresh init\n"); }
 
+    /* train on the head, hold out the tail for validation */
+    size_t train_end = (size_t)(n * (1.0 - (double)VAL_FRAC));
+    if (train_end < (size_t)(B + 2)) train_end = n;   /* tiny corpus: use all */
+    size_t train_span = train_end - B - 1;
+    fprintf(stderr, "corpus %zu bytes: train [0,%zu) val [%zu,%zu)\n",
+            n, train_end, train_end, n);
+
     float x[IN], h[HID], probs[V];
     double run = 0.0; long runc = 0;
     float lr = 0.10f;
     clock_t t0 = clock();
 
-    for (long s = 0; s < steps; s++) {
-        size_t pos = (size_t)(((uint64_t)rnd() << 20 ^ rnd()) % (n - B - 1));
-        const unsigned char *ctx = (const unsigned char *)text + pos;
-        int target = (unsigned char)text[pos + B];
-
-        float loss = forward(p, ctx, target, x, h, probs);
+    long batches = steps / BATCH;
+    const float invb = 1.0f / BATCH;
+    size_t np = sizeof(Params) / sizeof(float);
+    for (long bi = 0; bi < batches; bi++) {
         memset(grad, 0, sizeof(Params));
-        backward(p, ctx, target, x, h, probs, grad);
+        double bloss = 0.0;
+        for (int j = 0; j < BATCH; j++) {
+            size_t pos = (size_t)(((uint64_t)rnd() << 20 ^ rnd()) % train_span);
+            const unsigned char *ctx = (const unsigned char *)text + pos;
+            int target = (unsigned char)text[pos + B];
+            bloss += forward(p, ctx, target, x, h, probs);
+            backward(p, ctx, target, x, h, probs, grad);
+        }
+        float *gf = (float *)grad;                    /* average the batch gradient */
+        for (size_t i = 0; i < np; i++) gf[i] *= invb;
         adagrad_step(p, grad, ad, lr);
 
-        run += loss; runc++;
-        if ((s + 1) % 20000 == 0) {
+        run += bloss * invb; runc++;
+        long done = (bi + 1) * (long)BATCH;
+        if (done % 20000 < BATCH) {
             double sec = (double)(clock() - t0) / CLOCKS_PER_SEC;
-            fprintf(stderr, "step %8ld  loss %.4f  (%.0f samp/s)\n",
-                    s + 1, run / runc, (s + 1) / (sec + 1e-9));
+            double vl = eval_loss(p, text, train_end, n, 2000);
+            fprintf(stderr, "step %8ld  train %.4f  val %.4f  (%.0f samp/s)\n",
+                    done, run / runc, vl, done / (sec + 1e-9));
             run = 0.0; runc = 0;
         }
     }
     save(out, p);
-    fprintf(stderr, "saved %s\n", out);
+    double vl = eval_loss(p, text, train_end, n, 20000);
+    fprintf(stderr, "saved %s   final val loss (20k windows): %.4f\n", out, vl);
     free(text); free(p); free(grad); free(ad);
 }
 

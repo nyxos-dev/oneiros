@@ -57,7 +57,18 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   comments, `if (`, `{ }`, `= 0;`, `++)`, `!=`, `&&`. **Key finding:** the raw
   corpus is **84.5 % hex-table bytes** (font bitmaps / embedded assets / KAT
   vectors), so the model over-learns `0xNN,` runs. Fix = train on code logic only.
-- **I2 (started)** — cleaned corpus `data/corpus_clean.txt` (strip lines matching
-  `0x[0-9A-Fa-f]{2},`): 36 MB → **5.69 MB / 152 787 lines** of real C. Retraining
-  on it to compare sample quality. Still to do this line: train/val split for a
-  real generalisation number, then minibatching + a faster output layer.
+- **I2 (DONE)** — cleaned corpus (strip `0x..,` hex tables): 36 MB → 5.69 MB of
+  real C. Added a 90/10 **train/val split** with held-out validation loss, and
+  **minibatching** (BATCH=32): the old per-sample `memset(grad)` was a hidden
+  cost, so batching gave a **~3× speedup** (~3.3k → ~9.4k samp/s). Made E/B/HID
+  overridable (`-DB= -DHID=`). 2M-step baseline (B=8, HID=256): train 1.86 /
+  **val 1.97**, still trending down (not plateaued).
+  A 600k capacity sweep {(8,256),(16,256),(16,512),(24,512)} had the *smallest*
+  config best — but that was **budget-confounded** (bigger nets never converged in
+  600k steps), so it does NOT prove scale won't help; a fair test needs equal-
+  convergence budgets. Low-temp samples emit real C tokens (`const`, `uint8_t*`,
+  `sizeof(`, `return`, `= ;`) but loop ("the the the") and lack structure → the
+  char-8-context MLP captures *local statistics, not code structure*.
+- **NEXT (I3) — tokeniser.** The clear lever: reason in C tokens (identifiers,
+  keywords, punctuation), not raw bytes, so each step carries structure. Then a
+  fair capacity re-test at equal-convergence budget.
