@@ -80,7 +80,19 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   less training). Decoded samples emit C idioms as units (`for (int i=...; ... <
   SCREEN_WIDTH; ...)`, `out[ti] = 0;`). Train/val gap widened (3.67 / 4.26) → the
   1024-token corpus is a smaller effective dataset; mild overfitting begins.
-- **NEXT (I4) — attention.** A minimal from-scratch self-attention block over the
-  token context (longer effective memory than the fixed B-window MLP), plus more
-  BPE merges / data to close the overfit gap. Then the deferred fair capacity
-  re-test at equal-convergence budget.
+- **I4 (DONE — honest negative)** — built a from-scratch single-head self-attention
+  model (`src/attn.c`): token + positional embeddings, Q/K/V, scaled-dot-product
+  attention (single query at the last position) → context → tanh head → softmax,
+  hand-derived backprop **verified by a numeric gradient check** (V=256: 96.5 % of
+  informative params within 5 %, mean rel err 0.013). Trained 2M steps on tokens:
+  attn B=8 = **2.657 bits/byte**, attn B=16 = **2.628** — both **worse than the
+  MLP's 2.540**. Longer context helps attention (B=16 < B=8) but the pooling
+  bottleneck (all context → one E=24 vector) loses more than single-head attention
+  gains over the MLP's full 192-dim concat. **The MLP token model stays champion
+  (`oneiros.c`, 2.54 bpb);** `attn.c` is kept as the experimental branch.
+- **NEXT** — two honest paths: (a) make attention pay off — MULTI-HEAD + residual +
+  a small FFN (a real transformer block) and larger E; or (b) consolidate the
+  strong, simple MLP token model toward **I6 (fixed-point inference inside NyxOS)**,
+  where the endgame is tiny in-OS compute and the MLP's simplicity is an asset.
+  Plus the deferred fair capacity re-test at equal-convergence budget.
+  _(Loop PAUSED by the user 2026-09-08 after I4; resume with `/loop`.)_
