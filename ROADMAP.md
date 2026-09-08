@@ -90,9 +90,17 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   bottleneck (all context → one E=24 vector) loses more than single-head attention
   gains over the MLP's full 192-dim concat. **The MLP token model stays champion
   (`oneiros.c`, 2.54 bpb);** `attn.c` is kept as the experimental branch.
-- **NEXT** — two honest paths: (a) make attention pay off — MULTI-HEAD + residual +
-  a small FFN (a real transformer block) and larger E; or (b) consolidate the
-  strong, simple MLP token model toward **I6 (fixed-point inference inside NyxOS)**,
-  where the endgame is tiny in-OS compute and the MLP's simplicity is an asset.
-  Plus the deferred fair capacity re-test at equal-convergence budget.
-  _(Loop PAUSED by the user 2026-09-08 after I4; resume with `/loop`.)_
+- **I5 (DONE)** — bigger BPE vocab **2048** (2.97 bytes/token vs 2.42 at 1024). MLP
+  token model, 2M steps: val 4.78 nats/token = **2.32 bits/byte vs 2.54 at vocab
+  1024 — 8.6 % better** on the per-byte metric. **NEW CHAMPION**
+  (`data/oneiros_2048.bin`, build `-DV=2048`; `train.sh` reproduces it). Decoded
+  samples emit NyxOS-style signatures as units (`void nyx_start_menu_open(...)`,
+  `fb_rgb(...)`, `static const int`). Train/val gap widened (3.96 / 4.86) → bigger
+  vocab = fewer tokens = smaller effective dataset, so we're near the vocab ceiling
+  for a 5.7 MB corpus; the next lever is MORE DATA, not just more vocab.
+- **NEXT** — (a) MORE DATA (widen the corpus) to feed a bigger vocab without
+  overfitting; (b) the real transformer block (multi-head + residual + FFN,
+  `attn.c`); or (c) **I6** fixed-point / in-OS inference of the champion. Plus the
+  deferred fair capacity test.
+- Loop paused after I4, **RESUMED 2026-09-08** ("prosigue con el loop"); 2h cron
+  re-armed. Private; nothing public without asking first.
