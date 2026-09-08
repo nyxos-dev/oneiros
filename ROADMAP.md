@@ -98,9 +98,18 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   `fb_rgb(...)`, `static const int`). Train/val gap widened (3.96 / 4.86) → bigger
   vocab = fewer tokens = smaller effective dataset, so we're near the vocab ceiling
   for a 5.7 MB corpus; the next lever is MORE DATA, not just more vocab.
-- **NEXT** — (a) MORE DATA (widen the corpus) to feed a bigger vocab without
-  overfitting; (b) the real transformer block (multi-head + residual + FFN,
-  `attn.c`); or (c) **I6** fixed-point / in-OS inference of the champion. Plus the
-  deferred fair capacity test.
-- Loop paused after I4, **RESUMED 2026-09-08** ("prosigue con el loop"); 2h cron
-  re-armed. Private; nothing public without asking first.
+- **I5b (DONE — more data)** — widened the corpus to all `kernel/` + `user/` C
+  (excluding Fable's `user/pkg/ncc`; adds NyxOS user code + the vendored TinyCC),
+  5.7 MB → **7.6 MB clean (+33 %)**. Retrained the vocab-2048 MLP, 2M steps: val
+  4.23 nats/token = **2.14 bits/byte** (from 2.32), and the **train/val gap
+  collapsed 0.90 → 0.25** — more data cut overfitting ~72 %, confirming data was the
+  bottleneck. NEW CHAMPION (`data/oneiros_2048_wide.bin`; `train.sh` reproduces it
+  via the widened `make_corpus.sh`). Val still trending down → more steps/data
+  would help further. Samples show real C constructs (`int sprite = 1;`,
+  `floor->speed = ...`, `#define ...`, `while (...)`).
+  bpb progression: char 2.84 → tok1024 2.54 → tok2048 2.32 → **+data 2.14**.
+- **NEXT** — keep scaling data + steps (val not plateaued); then the real
+  transformer block (`attn.c` multi-head + residual + FFN) or **I6** fixed-point /
+  in-OS inference of the champion.
+- Loop: resumed 2026-09-08, **PAUSED AGAIN by the user** ("pausa el loop cuando
+  termines"). Resume with `/loop`. Private; nothing public without asking first.
