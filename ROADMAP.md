@@ -135,8 +135,20 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   sample: `static int nyx_i64 n, st[57])  const char* tok = 0x2000000;  #define
   OB_DER_SIZE_PROC_RELWIN_W` — real declarations/arrays/macros/comments in NyxOS
   caps style.
-- **NEXT (on resume)** — one honest multi-head-transformer attempt (`attn.c` + FFN
-  + residual) to confirm 2.04 is the ceiling. If it doesn't beat it, (4b) is settled
-  → I judge PREPARADA and STOP to ask before the in-OS/public step.
-- Loop resumed 2026-09-10, **PAUSED by the user** ("pausa el loop cuando termines").
-  Resume with `/loop`. Private; the in-OS run needs the user's OK.
+- **I7 (DONE — the transformer WINS)** — full transformer block from scratch
+  (`src/xformer.c`): multi-head attention (NH=4) + FFN + residual + a matched
+  D→HID→V head, D=64; hand backprop **gradient-checked** (V=256: 100 % within 5 %).
+  First run DIVERGED (loss 18 > random — no LayerNorm + Adagrad cold-start); fixed
+  with LR **warmup + lr 0.02** (env `ONEIROS_LR`). 4M steps: val 3.96 = **2.01
+  bits/byte — NEW CHAMPION**, beating the 6M MLP (2.04) at fewer steps and the 4M
+  MLP (2.08) clearly. **Honest correction: the MLP was NOT the ceiling — I called it
+  too early; the proper transformer opened fresh headroom** (val still ~flat-dropping
+  at 4M). Sample: `static int nyx_i64 fl = nyx_u64 + (nyx_str){...}; tag =
+  ptcc_read(); if(!`.
+- bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → +steps 2.04 →
+  **transformer 2.01**.
+- **NEXT** — push the transformer (more steps; maybe LayerNorm / 2 blocks / bigger
+  D) since quality reopened; then update `ngen.c` to the transformer forward so the
+  in-OS demo runs the champion (I6 update owed). **(4b) NOT settled → keep improving,
+  not preparada yet.**
+- Loop RESUMED 2026-09-10, continues on the 2h cron. Private; in-OS run needs user OK.
