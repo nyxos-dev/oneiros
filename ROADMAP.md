@@ -145,10 +145,14 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   too early; the proper transformer opened fresh headroom** (val still ~flat-dropping
   at 4M). Sample: `static int nyx_i64 fl = nyx_u64 + (nyx_str){...}; tag =
   ptcc_read(); if(!`.
-- bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → +steps 2.04 →
-  **transformer 2.01**.
-- **NEXT** — push the transformer (more steps; maybe LayerNorm / 2 blocks / bigger
-  D) since quality reopened; then update `ngen.c` to the transformer forward so the
-  in-OS demo runs the champion (I6 update owed). **(4b) NOT settled → keep improving,
-  not preparada yet.**
-- Loop RESUMED 2026-09-10, continues on the 2h cron. Private; in-OS run needs user OK.
+- **I7b (DONE — transformer scales + runs in-OS)** — resumed +4M (8M total): val
+  3.76 = **1.91 bits/byte** (from 2.01 at 4M); still improving. And `src/ngen_x.c` =
+  the transformer's self-contained in-OS inference (own expf/logf/tanhf + own sqrtf,
+  no `-lm`), **verified byte-identical to the libm `xformer`**. So the CHAMPION now
+  runs under NyxOS constraints, not just the old MLP. In-OS sample: `int main()
+  return (int)(gif_y1); #define R_PPC_RELLIST 7`.
+- bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 →
+  transformer 4M 2.01 → **transformer 8M 1.91**.
+- **NEXT** — keep scaling the transformer (more steps; LayerNorm to allow higher lr
+  / depth; bigger D). Quality still dropping → **(4b) not settled, not preparada.**
+- Loop continues on the 2h cron. Private; the in-OS run needs the user's OK.

@@ -8,9 +8,12 @@ Everything below is prepared and verified privately; only the final wiring is le
 
 | file | size | role |
 |---|---|---|
-| `src/ngen.c` | ~9 KB | the inference (self-contained, no libm) |
-| `data/oneiros_2048.bin` | 2.5 MB | champion weights (MLP, vocab 2048) |
+| `src/ngen_x.c` | ~10 KB | **champion** inference (transformer, self-contained, no libm) |
+| `data/xformer_8M.bin` | 2.9 MB | champion weights (transformer, 1.91 bits/byte, vocab 2048) |
 | `data/vocab2048.bin` | 20 KB | BPE merges + token expansions |
+
+(`src/ngen.c` + `data/oneiros_2048.bin` are the older, smaller MLP path (2.04 bpb),
+kept as a fallback. Both compile under NyxOS with no `-lm`.)
 
 ## Why it will build with NyxOS's own `cc`
 
