@@ -130,7 +130,13 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   package ✓ (`INTEGRATION.md` + data files); (4b) **quality as good as it gets at
   this scale — IN PROGRESS** (6M-step run; one honest multi-head-transformer attempt
   still owed). When (4b) settles → stop the loop + ask before the in-OS/public step.
-- **NEXT** — 6M-step champion result; then one honest transformer-block attempt
-  (`attn.c` multi-head + FFN + residual) to confirm the quality ceiling.
-- Loop RESUMED 2026-09-10 ("sigue entrenándola … hasta que creas que esté
-  preparada") — 2h cron; I decide readiness. Private; in-OS run needs user OK.
+- **6M champion = 2.04 bits/byte** (val 4.02). Gains: 2→4M −0.064, 4→6M −0.043 →
+  **val plateauing, near the MLP quality ceiling at this data scale**. In-OS `ngen`
+  sample: `static int nyx_i64 n, st[57])  const char* tok = 0x2000000;  #define
+  OB_DER_SIZE_PROC_RELWIN_W` — real declarations/arrays/macros/comments in NyxOS
+  caps style.
+- **NEXT (on resume)** — one honest multi-head-transformer attempt (`attn.c` + FFN
+  + residual) to confirm 2.04 is the ceiling. If it doesn't beat it, (4b) is settled
+  → I judge PREPARADA and STOP to ask before the in-OS/public step.
+- Loop resumed 2026-09-10, **PAUSED by the user** ("pausa el loop cuando termines").
+  Resume with `/loop`. Private; the in-OS run needs the user's OK.
