@@ -8,8 +8,8 @@ Everything below is prepared and verified privately; only the final wiring is le
 
 | file | size | role |
 |---|---|---|
-| `src/ngen_xln.c` (build `-DB=16`) | ~9 KB | **champion** inference (RMSNorm transformer, no libm) |
-| `data/xformer_ln16.bin` | 2.9 MB | champion weights (RMSNorm, B=16, 1.82 bits/byte, vocab 2048) |
+| `src/ngen_xln.c` (build `-DB=32`) | ~9 KB | **champion** inference (RMSNorm transformer, no libm) |
+| `data/xformer_ln32.bin` | 2.9 MB | champion weights (RMSNorm, B=32, 1.78 bits/byte, vocab 2048) |
 | `data/vocab2048.bin` | 20 KB | BPE merges + token expansions |
 
 (Older paths kept as no-`-lm` fallbacks: `ngen_x.c`+`xformer_8M.bin` (plain

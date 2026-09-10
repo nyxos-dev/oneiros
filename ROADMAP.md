@@ -164,9 +164,15 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   **verified byte-identical to libm** at B=8 and B=16 → the in-OS demo now runs the
   exact champion. In-OS sample: `static int nyx_u8 d2 = (st-1)-2*3; if ((k==2)) {
   st[...]; nyx_i64 r = np; if (ck(st,40)) {` — real conditionals, indexing, nesting.
+- **I7e (DONE — B=32, context saturating)** — B=16→B=32: val 3.51 = **1.78 bits/byte
+  — NEW CHAMPION** (from 1.82), but the context gain is **halving** (B=8→16 −0.078,
+  B=16→32 −0.042) → context is saturating for this D=64 model. `ngen_xln -DB=32`
+  verified **greedy-identical to libm** (temperature sampling can diverge at near-ties
+  from the own-math ~1e-6 — expected, fine). Sample: `static int bv(uint64_t v) {
+  uint64_t v = (uint64_t)v * 0 + ... (v >> 16) & 0x`.
 - bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 → transformer
-  2.01 → 1.91 → RMSNorm 1.90 → **B=16 1.82**.
-- **NEXT** — still improving: even longer context (B=32), more steps, or 2 blocks.
-  **(4b) not settled, not preparada.**
-- Loop continues (2h cron). Champion = `xformer_ln16.bin` (RMSNorm B=16); in-OS =
-  `ngen_xln.c -DB=16`. Private; the in-OS run needs the user's OK.
+  2.01 → 1.91 → RMSNorm 1.90 → B=16 1.82 → **B=32 1.78**.
+- **NEXT** — context saturating → switch levers to DEPTH (2 transformer blocks) or
+  WIDTH (bigger D), the untried big ones. **(4b) not settled, not preparada.**
+- Loop continues (2h cron). Champion = `xformer_ln32.bin` (RMSNorm B=32); in-OS =
+  `ngen_xln.c -DB=32`. Private; the in-OS run needs the user's OK.
