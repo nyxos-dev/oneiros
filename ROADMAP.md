@@ -157,9 +157,16 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   lr) and hits **1.90 bits/byte at 4M steps — NEW CHAMPION**, beating the no-norm
   transformer's 1.91 at 8M (better in HALF the steps). Still dropping. Sample:
   `void nyx_i64* pct_lock, nb_section->data, fmt) return 1; }`.
+- **I7d (DONE — longer context + in-OS champion)** — B=8→**B=16** (RMSNorm handles
+  it; attention params barely grow with B): val 3.59 = **1.82 bits/byte at 4M — NEW
+  CHAMPION** (from 1.90 at B=8), still dropping. And `src/ngen_xln.c` = the RMSNorm
+  transformer's self-contained in-OS inference (own math incl. own sqrtf, no `-lm`),
+  **verified byte-identical to libm** at B=8 and B=16 → the in-OS demo now runs the
+  exact champion. In-OS sample: `static int nyx_u8 d2 = (st-1)-2*3; if ((k==2)) {
+  st[...]; nyx_i64 r = np; if (ck(st,40)) {` — real conditionals, indexing, nesting.
 - bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 → transformer
-  2.01 → 8M 1.91 → **RMSNorm 1.90**.
-- **NEXT** — RMSNorm unlocked scaling (stable at higher lr): more steps + deeper
-  (2 blocks) / bigger D. Also port `ngen_x` to RMSNorm (add rms_fwd, magic ONEIROS4)
-  so the in-OS demo runs the true champion. **(4b) not settled, not preparada.**
-- Loop continues on the 2h cron. Private; the in-OS run needs the user's OK.
+  2.01 → 1.91 → RMSNorm 1.90 → **B=16 1.82**.
+- **NEXT** — still improving: even longer context (B=32), more steps, or 2 blocks.
+  **(4b) not settled, not preparada.**
+- Loop continues (2h cron). Champion = `xformer_ln16.bin` (RMSNorm B=16); in-OS =
+  `ngen_xln.c -DB=16`. Private; the in-OS run needs the user's OK.

@@ -8,12 +8,12 @@ Everything below is prepared and verified privately; only the final wiring is le
 
 | file | size | role |
 |---|---|---|
-| `src/ngen_x.c` | ~10 KB | **champion** inference (transformer, self-contained, no libm) |
-| `data/xformer_8M.bin` | 2.9 MB | champion weights (transformer, 1.91 bits/byte, vocab 2048) |
+| `src/ngen_xln.c` (build `-DB=16`) | ~9 KB | **champion** inference (RMSNorm transformer, no libm) |
+| `data/xformer_ln16.bin` | 2.9 MB | champion weights (RMSNorm, B=16, 1.82 bits/byte, vocab 2048) |
 | `data/vocab2048.bin` | 20 KB | BPE merges + token expansions |
 
-(`src/ngen.c` + `data/oneiros_2048.bin` are the older, smaller MLP path (2.04 bpb),
-kept as a fallback. Both compile under NyxOS with no `-lm`.)
+(Older paths kept as no-`-lm` fallbacks: `ngen_x.c`+`xformer_8M.bin` (plain
+transformer, 1.91); `ngen.c`+`oneiros_2048.bin` (MLP, 2.04).)
 
 ## Why it will build with NyxOS's own `cc`
 
