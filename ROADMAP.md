@@ -108,8 +108,22 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   would help further. Samples show real C constructs (`int sprite = 1;`,
   `floor->speed = ...`, `#define ...`, `while (...)`).
   bpb progression: char 2.84 → tok1024 2.54 → tok2048 2.32 → **+data 2.14**.
-- **NEXT** — keep scaling data + steps (val not plateaued); then the real
-  transformer block (`attn.c` multi-head + residual + FFN) or **I6** fixed-point /
-  in-OS inference of the champion.
-- Loop: resumed 2026-09-08, **PAUSED AGAIN by the user** ("pausa el loop cuando
-  termines"). Resume with `/loop`. Private; nothing public without asking first.
+- **Champion pushed to 4M steps** — val 4.10 nats/token = **2.08 bits/byte** (from
+  2.14 at 2M; val still slowly trending down). bpb: char 2.84 → tok1024 2.54 →
+  tok2048 2.32 → +data 2.14 → +steps **2.08**.
+- **I6a (DONE — in-OS-ready inference)** — `src/ngen.c`: self-contained inference
+  (loads champion + BPE vocab, generates) using only malloc/fopen/fread — which
+  NyxOS userland has — plus its OWN `expf`/`logf`/`tanhf` (NyxOS libm has
+  sinf/cosf/sqrtf but NOT exp/log/tanh; kernel is -mno-sse). **Links with NO -lm,
+  and verified byte-identical to the libm `oneiros sample`** at low temp. This is
+  the inference ready to run inside NyxOS. NOTE: the actual in-OS run touches the
+  nyx-os tree and is a PUBLIC step → needs the maintainer's OK first.
+- **READINESS BAR** (my call; then STOP + notify — never publish myself): (1) stable
+  [✓]; (2) NyxOS-style output [✓ `nyx_i64`, `fb_rgb`, `nyx_start_menu_open`]; (3)
+  self-contained inference that builds under NyxOS constraints [✓ ngen.c, no libm];
+  (4) quality as good as it gets at this scale + a ready in-OS integration package
+  [IN PROGRESS]. When (4) holds → stop the loop and ask before the in-OS/public step.
+- **NEXT** — squeeze remaining quality (more steps; the transformer block on the
+  wider corpus; a TinyCC-compat pass on ngen.c) toward the readiness bar.
+- Loop RESUMED 2026-09-10 ("sigue entrenándola … hasta que creas que esté
+  preparada") — 2h cron; I decide readiness. Private; in-OS run needs user OK.
