@@ -118,12 +118,19 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   and verified byte-identical to the libm `oneiros sample`** at low temp. This is
   the inference ready to run inside NyxOS. NOTE: the actual in-OS run touches the
   nyx-os tree and is a PUBLIC step → needs the maintainer's OK first.
+- **I6b (DONE — integration package ready)** — verified `ngen.c` builds under NyxOS
+  constraints: **every libc symbol it uses is in `user/libc.h`** (time, atoi/atof,
+  str/mem, fopen/fread/fwrite/fputc/fputs/fprintf, malloc/free), **no `-lm`**,
+  conservative C99 (TinyCC-clean, no host tcc available to run the final parse).
+  `INTEGRATION.md` documents the exact public wiring (drop `ngen.c` as `nyxgen`,
+  put the 2.5 MB ckpt + 20 KB vocab on the disk, boot QEMU, screendump).
 - **READINESS BAR** (my call; then STOP + notify — never publish myself): (1) stable
-  [✓]; (2) NyxOS-style output [✓ `nyx_i64`, `fb_rgb`, `nyx_start_menu_open`]; (3)
-  self-contained inference that builds under NyxOS constraints [✓ ngen.c, no libm];
-  (4) quality as good as it gets at this scale + a ready in-OS integration package
-  [IN PROGRESS]. When (4) holds → stop the loop and ask before the in-OS/public step.
-- **NEXT** — squeeze remaining quality (more steps; the transformer block on the
-  wider corpus; a TinyCC-compat pass on ngen.c) toward the readiness bar.
+  ✓; (2) NyxOS-style output ✓; (3) self-contained NyxOS-buildable inference ✓
+  (ngen.c, symbol-verified, own-math byte-identical to libm); (4a) in-OS integration
+  package ✓ (`INTEGRATION.md` + data files); (4b) **quality as good as it gets at
+  this scale — IN PROGRESS** (6M-step run; one honest multi-head-transformer attempt
+  still owed). When (4b) settles → stop the loop + ask before the in-OS/public step.
+- **NEXT** — 6M-step champion result; then one honest transformer-block attempt
+  (`attn.c` multi-head + FFN + residual) to confirm the quality ceiling.
 - Loop RESUMED 2026-09-10 ("sigue entrenándola … hasta que creas que esté
   preparada") — 2h cron; I decide readiness. Private; in-OS run needs user OK.
