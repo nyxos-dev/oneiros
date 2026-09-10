@@ -151,8 +151,15 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   no `-lm`), **verified byte-identical to the libm `xformer`**. So the CHAMPION now
   runs under NyxOS constraints, not just the old MLP. In-OS sample: `int main()
   return (int)(gif_y1); #define R_PPC_RELLIST 7`.
-- bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 →
-  transformer 4M 2.01 → **transformer 8M 1.91**.
-- **NEXT** — keep scaling the transformer (more steps; LayerNorm to allow higher lr
-  / depth; bigger D). Quality still dropping → **(4b) not settled, not preparada.**
+- **I7c (DONE — RMSNorm helps)** — RMSNorm (LLaMA-style pre-norm) at 3 points
+  (`src/xformer_ln.c`), gradient-checked (V=256 97 %; V=2048 100 % within 5 % on
+  |grad|>1e-2, rest is float noise). Trains stably at **lr 0.05** (2.5× the no-norm
+  lr) and hits **1.90 bits/byte at 4M steps — NEW CHAMPION**, beating the no-norm
+  transformer's 1.91 at 8M (better in HALF the steps). Still dropping. Sample:
+  `void nyx_i64* pct_lock, nb_section->data, fmt) return 1; }`.
+- bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 → transformer
+  2.01 → 8M 1.91 → **RMSNorm 1.90**.
+- **NEXT** — RMSNorm unlocked scaling (stable at higher lr): more steps + deeper
+  (2 blocks) / bigger D. Also port `ngen_x` to RMSNorm (add rms_fwd, magic ONEIROS4)
+  so the in-OS demo runs the true champion. **(4b) not settled, not preparada.**
 - Loop continues on the 2h cron. Private; the in-OS run needs the user's OK.
