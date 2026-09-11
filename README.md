@@ -48,6 +48,8 @@ Every network's hand-written backprop is checked against numerical gradients
     src/xformer.c      transformer block (multi-head attention + FFN + residual)
     src/xformer_ln.c   the champion: transformer + RMSNorm
     src/ngen_xln.c     self-contained inference for running INSIDE NyxOS
+    src/nyxgen.c       the compact in-OS model as the `nyxgen` CLI (NyxOS port)
+    nyxos/oneiros_win.c  the same model as a NyxOS desktop app (runs in the kernel GUI)
     model/             the trained champion + its vocabulary
     data/make_corpus.sh  builds the training corpus from a NyxOS checkout
     train.sh           reproduce a champion from scratch
@@ -95,6 +97,20 @@ if you ship the bigger model). See `INTEGRATION.md`. The port landed in NyxOS in
 gcc -O2 -DV=2048 -DB=32 -o ngen_xln src/ngen_xln.c   # champion, host; no -lm
 gcc -O2 -o nyxgen src/nyxgen.c                        # compact in-OS model; no -lm
 ```
+
+### …and a desktop app
+
+Oneiros is also a first-class NyxOS **desktop app** — the same model, in a window.
+Open **Oneiros** from the Start menu, type a seed, press **Dream**, and it streams
+NyxOS-style C live in the compositor (temperature slider and all). It runs right in
+the kernel's GUI: every forward-pass buffer is heap-allocated (the kernel task stack
+is only 4 KB), and the math is inline so no `float` ever crosses a call boundary (the
+kernel is `-mno-sse`). Source is `nyxos/oneiros_win.c`; it lands in NyxOS via
+[nyxos-dev/nyx-os#106](https://github.com/nyxos-dev/nyx-os/pull/106).
+
+![The Oneiros app generating NyxOS-style C, live inside NyxOS](docs/oneiros-app.png)
+
+![Oneiros in the NyxOS Start menu, beside the other apps](docs/oneiros-menu.png)
 
 ## License
 
