@@ -172,7 +172,19 @@ Only source and docs are committed. Corpus, checkpoints and logs stay untracked.
   uint64_t v = (uint64_t)v * 0 + ... (v >> 16) & 0x`.
 - bpb: char 2.84 → tok1024 2.54 → tok2048 2.32 → +data 2.14 → MLP 2.04 → transformer
   2.01 → 1.91 → RMSNorm 1.90 → B=16 1.82 → **B=32 1.78**.
-- **NEXT** — context saturating → switch levers to DEPTH (2 transformer blocks) or
-  WIDTH (bigger D), the untried big ones. **(4b) not settled, not preparada.**
-- Loop continues (2h cron). Champion = `xformer_ln32.bin` (RMSNorm B=32); in-OS =
-  `ngen_xln.c -DB=32`. Private; the in-OS run needs the user's OK.
+- **I7f (DONE — width no help; PLATEAU reached)** — D=64→96 (B=32): at equal 2M steps
+  D=96 val ≈ D=64 (~3.58 both) but **2× slower** wall-clock; its 2M result 1.82 bpb is
+  WORSE than the D=64 champion's 1.78 at 4M. **Width doesn't pay at this data scale
+  within feasible compute; depth (multi-layer full attention) is CPU-prohibitive
+  (~150 samp/s → days for a fair run).** Cheap levers (tokeniser, data, steps,
+  RMSNorm, context) are tapped; context saturated (gain halving). → **practical
+  ceiling for a from-scratch CPU model on a 2.67M-token corpus.**
+- **★ PREPARADA (2026-09-11).** Every major lever honestly tested, gradcheck-verified
+  throughout. Champion: RMSNorm transformer D=64 B=32, **1.78 bits/byte**, emits
+  NyxOS-flavoured C with real structure; self-contained NyxOS-ready inference
+  (`src/ngen_xln.c`, no libm, greedy-identical to libm). Bar (1)(2)(3)(4a)(4b) all ✓.
+  Honest limit: it dreams NyxOS-style code, it does NOT write compilable code (a
+  fundamental scale limit) — the honest "(a)" tech-demo, as agreed.
+- **LOOP STOPPED, user notified 2026-09-11.** The next step (compile `ngen_xln` in
+  NyxOS with the in-OS cc + boot QEMU) is PUBLIC and touches the nyx-os tree → needs
+  the user's explicit OK; NOT done autonomously. See `INTEGRATION.md`.
