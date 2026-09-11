@@ -69,14 +69,22 @@ bash train.sh            # regenerates the corpus, learns the vocab, trains
 ## Running inside NyxOS
 
 Oneiros ships in NyxOS as the **`nyxgen`** command (`src/nyxgen.c`, the
-`user/pkg/nyxgen` port). NyxOS userland provides `malloc`/`fopen`/`fread` and float
-math, but **not** `exp`/`log`/`tanh` (and the kernel is `-mno-sse`), so Oneiros
-brings its own — every in-OS build links with **no `-lm`**, and its output is
-bit-for-bit identical to the libm build under greedy decoding.
+`user/pkg/nyxgen` port). You install it with NyxOS's own package manager, which
+compiles the port **in-OS** with the NyxOS `cc` (TinyCC) — no cross-toolchain, no host:
 
 ```
-nyxgen 200 0.7 "static void "     # inside NyxOS
+xbm install nyxgen                # compiles nyxgen.c in-OS -> /mnt/bin/nyxgen
+nyxgen 180 0.7 "static void "     # dream some NyxOS-style C
 ```
+
+![nyxgen compiled and generating NyxOS-style C inside NyxOS](docs/nyxgen-in-nyxos.png)
+
+NyxOS userland provides `malloc`/`fopen`/`fread` and float math, but **not**
+`exp`/`log`/`tanh` (and the kernel is `-mno-sse`), so Oneiros brings its own — the
+in-OS build links with **no `-lm`**, and its output matches the libm build under
+greedy decoding. One source compiles both ways: under the in-OS TinyCC it pulls
+NyxOS's `libc.h` and spells its own fixed-width types (the OS ships no `<stdint.h>`)
+and seeds from the RTC; under host `gcc` it uses the standard library.
 
 The in-OS model is a compact char-level model (~150 KB, ~2.8 bits/byte) that fits
 the OS image; `src/ngen_xln.c` runs the full 2.9 MB token champion (host, or in-OS

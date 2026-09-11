@@ -11,11 +11,31 @@
  *
  *   nyxgen [n] [temp] [seed]     e.g.  nyxgen 200 0.7 "static void "
  */
+/*
+ * Two build paths from ONE source:
+ *   - Host (gcc):   the C standard library.
+ *   - In NyxOS (cc = TinyCC, __TINYC__): the OS's own libc subset. The in-OS
+ *     toolchain ships no <stdint.h>/<stdlib.h>/<time.h>, so the fixed-width
+ *     types are spelled directly (LP64 x86_64) and the RNG is seeded from the
+ *     RTC via NyxOS's own time(nyx_tm*). This is why `xbm install nyxgen` works.
+ */
+#ifdef __TINYC__
+#include "libc.h"                       /* malloc/fopen/fread/fputs/printf/getenv/atoi/atof/memmove... + time(nyx_tm*) */
+typedef unsigned char  u8;
+typedef int            i32;
+typedef unsigned int   u32;
+typedef unsigned long  u64;
+#else
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+typedef uint8_t  u8;
+typedef int32_t  i32;
+typedef uint32_t u32;
+typedef uint64_t u64;
+#endif
 
 #define V   256          /* char-level: a byte is a token          */
 #define E   32
@@ -44,11 +64,11 @@ static float k_expf(float x){
     const float LOG2E=1.44269504f, LN2=0.6931471805f;
     int n=(int)(x*LOG2E+(x>=0?0.5f:-0.5f)); float r=x-(float)n*LN2;
     float p=1.0f+r*(1.0f+r*(0.5f+r*(0.16666667f+r*(0.041666668f+r*0.008333334f))));
-    union{float f;int32_t i;}u; u.i=(int32_t)((n+127)<<23); return p*u.f;
+    union{float f;i32 i;}u; u.i=(i32)((n+127)<<23); return p*u.f;
 }
 static float k_logf(float x){
     if (x<=0.0f) return -88.0f;
-    union{float f;int32_t i;}u; u.f=x; int e=((u.i>>23)&0xFF)-127;
+    union{float f;i32 i;}u; u.f=x; int e=((u.i>>23)&0xFF)-127;
     u.i=(u.i&0x807FFFFF)|0x3F800000; float m=u.f,t=(m-1.0f)/(m+1.0f),t2=t*t;
     float s=t*(2.0f+t2*(0.6666667f+t2*(0.4f+t2*0.2857143f))); return (float)e*0.6931471805f+s;
 }
@@ -59,8 +79,8 @@ static float k_tanhf(float x){
 }
 static float k_sqrtf(float x){ if(x<=0)return 0; float g=x; for(int i=0;i<24;i++) g=0.5f*(g+x/g); return g; }
 
-static uint64_t rng=0x9E3779B97F4A7C15ULL;
-static uint32_t rnd(void){ rng^=rng<<13; rng^=rng>>7; rng^=rng<<17; return (uint32_t)(rng>>32); }
+static u64 rng=0x9E3779B97F4A7C15ULL;
+static u32 rnd(void){ rng^=rng<<13; rng^=rng>>7; rng^=rng<<17; return (u32)(rng>>32); }
 static float frand(void){ return (float)(rnd()/4294967296.0); }
 
 static void rms(const float *x, const float *g, float *y){
@@ -99,7 +119,7 @@ static void forward(const Params *p, const unsigned char *tok, float *probs){
 }
 
 static int load_ckpt(const char *path, Params *p){
-    FILE *f=fopen(path,"rb"); if(!f) return 0; char m[8]; int32_t dims[6];
+    FILE *f=fopen(path,"rb"); if(!f) return 0; char m[8]; i32 dims[6];
     if (fread(m,1,8,f)!=8||memcmp(m,"ONEIROS4",8)){ fclose(f); return 0; }
     if (fread(dims,sizeof(dims),1,f)!=1){ fclose(f); return 0; }
     if (dims[0]!=V||dims[1]!=E||dims[2]!=B||dims[3]!=HID||dims[4]!=NH||dims[5]!=FF){
@@ -123,7 +143,14 @@ int main(int argc, char **argv){
     fputs(seed,stdout);
 
     float *probs=malloc(V*sizeof(float));
-    rng ^= (uint64_t)time(NULL)*0x2545F4914F6CDD1DULL;
+#ifdef __TINYC__
+    { nyx_tm tm; time(&tm);                          /* in-OS: seed from the RTC (SYS_TIME) */
+      u64 s = (u64)tm.sec + 61u*tm.min + 3661u*tm.hour
+            + 100003u*(u64)tm.mday + 1300021u*(u64)tm.mon + 79800011u*(u64)tm.year;
+      rng ^= s*0x2545F4914F6CDD1DULL; }
+#else
+    rng ^= (u64)time(NULL)*0x2545F4914F6CDD1DULL;    /* host: wall-clock seed */
+#endif
     for (int i=0;i<nout;i++){
         forward(p,ctx,probs);
         float mx=-1e30f; for(int c=0;c<V;c++){ float lp=k_logf(probs[c]+1e-12f)/temp; probs[c]=lp; if(lp>mx)mx=lp; }
