@@ -68,16 +68,25 @@ bash train.sh            # regenerates the corpus, learns the vocab, trains
 
 ## Running inside NyxOS
 
-`src/ngen_xln.c` is the inference path built for the OS. NyxOS userland provides
-`malloc`/`fopen`/`fread` and float math, but **not** `exp`/`log`/`tanh` (and the
-kernel is `-mno-sse`), so Oneiros brings its own — it links with **no `-lm`** and
-its output is bit-for-bit identical to the libm build under greedy decoding.
+Oneiros ships in NyxOS as the **`nyxgen`** command (`src/nyxgen.c`, the
+`user/pkg/nyxgen` port). NyxOS userland provides `malloc`/`fopen`/`fread` and float
+math, but **not** `exp`/`log`/`tanh` (and the kernel is `-mno-sse`), so Oneiros
+brings its own — every in-OS build links with **no `-lm`**, and its output is
+bit-for-bit identical to the libm build under greedy decoding.
 
-```sh
-gcc -O2 -DV=2048 -DB=32 -o ngen_xln src/ngen_xln.c   # note: no -lm
+```
+nyxgen 200 0.7 "static void "     # inside NyxOS
 ```
 
-Inside NyxOS it is the `nyxgen` command. See `INTEGRATION.md`.
+The in-OS model is a compact char-level model (~150 KB, ~2.8 bits/byte) that fits
+the OS image; `src/ngen_xln.c` runs the full 2.9 MB token champion (host, or in-OS
+if you ship the bigger model). See `INTEGRATION.md`. The port landed in NyxOS in
+[nyxos-dev/nyx-os#104](https://github.com/nyxos-dev/nyx-os/pull/104).
+
+```sh
+gcc -O2 -DV=2048 -DB=32 -o ngen_xln src/ngen_xln.c   # champion, host; no -lm
+gcc -O2 -o nyxgen src/nyxgen.c                        # compact in-OS model; no -lm
+```
 
 ## License
 
